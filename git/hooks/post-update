@@ -2,7 +2,6 @@
 #
 echo "determining branch"
 branch=$(echo "$1" | cut -d/ -f3);
-oldbranch=$branch #`git rev-parse --abbrev-ref HEAD`
 worktree=""
 runsync=false
 if [ "master" = "$branch" ]
@@ -12,31 +11,20 @@ then
 fi
 if [ "develop" = "$branch" ]
 then
-    worktree="/var/www/vhosts/testdmain.com"
+    worktree="/var/www/vhosts/testdomain.com"
 fi
 
-update_file_timestamp() {
-    #get file time from last git commit and update with correct time after checkout
-    file_time=`git --work-tree="$worktree" log -1 --pretty=format:%ad --date local -- $1`
-    touch -d "$file_time" "$worktree/$1"
-}
 # do stuff if worktree is not empty
 if [ ! -z "$worktree" ]
 then
     echo "branch $branch deployed to $worktree"
+    # update head and index - to avoid changed timstamp after checkout
     git symbolic-ref HEAD refs/heads/$branch
     git --work-tree="$worktree" update-index --refresh
+    # checkout files to worktree
     git --work-tree="$worktree" checkout $branch -f
-    if [ "$branch" != "$oldbranch"  ]; then
-        echo "update timestamps - cause branch changed"
-        for file in `git --work-tree="$worktree" ls-files`
-        do
-            update_file_timestamp "$file"
-        done
-    fi
-
     if [ $runsync = true ]; then
-        #run syn scripts
+        #run sync scripts
         :
     fi
 fi
